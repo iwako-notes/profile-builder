@@ -396,6 +396,35 @@
       border-color: var(--success);
     }
 
+    .fav-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 8px 0;
+    }
+    .fav-table td {
+      padding: 8px 12px;
+      font-size: 14px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    .fav-table tr:last-child td { border-bottom: none; }
+    .fav-label {
+      color: var(--text-light);
+      font-weight: 500;
+      white-space: nowrap;
+      width: 1%;
+    }
+    .fav-value {
+      font-weight: 600;
+      color: var(--text);
+    }
+    .fav-note {
+      font-size: 12px;
+      color: var(--text-muted);
+      padding: 4px 16px 8px;
+      line-height: 1.5;
+    }
+
     .result-global-actions {
       display: flex;
       flex-direction: column;
@@ -1250,17 +1279,35 @@
 
         const card = document.createElement('div');
         card.className = 'result-card';
-        card.innerHTML = `
-          <div class="result-card-header">
-            <span class="emoji">${sec.emoji}</span>
-            <span class="title">${sec.title}</span>
-          </div>
-          <div class="result-card-hint">→ ${sec.hint}</div>
-          <div class="result-card-body">${escapeHtmlPlain(text)}</div>
-          <div class="result-card-actions">
-            <button class="btn-copy" onclick="copyText(this, '${sec.id}')">📋 コピー</button>
-          </div>
-        `;
+
+        if (sec.id === 'favorites' && state.favorites.length > 0) {
+          const rows = state.favorites.map(f =>
+            `<tr><td class="fav-label">好きな ${escapeHtml(f.category)}</td><td class="fav-value">${escapeHtml(f.value)}</td></tr>`
+          ).join('');
+          card.innerHTML = `
+            <div class="result-card-header">
+              <span class="emoji">${sec.emoji}</span>
+              <span class="title">${sec.title}</span>
+            </div>
+            <div class="result-card-hint">→ ${sec.hint}</div>
+            <div class="result-card-body" style="padding:4px 8px;">
+              <table class="fav-table">${rows}</table>
+            </div>
+            <div class="fav-note">💡 リベシティではドロップダウンからカテゴリを選び、右の欄に値を入力します</div>
+          `;
+        } else {
+          card.innerHTML = `
+            <div class="result-card-header">
+              <span class="emoji">${sec.emoji}</span>
+              <span class="title">${sec.title}</span>
+            </div>
+            <div class="result-card-hint">→ ${sec.hint}</div>
+            <div class="result-card-body">${escapeHtmlPlain(text)}</div>
+            <div class="result-card-actions">
+              <button class="btn-copy" onclick="copyText(this, '${sec.id}')">📋 コピー</button>
+            </div>
+          `;
+        }
         card.dataset.text = text;
         card.dataset.sectionId = sec.id;
         chat.appendChild(card);
