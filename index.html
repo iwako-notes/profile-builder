@@ -1,0 +1,1351 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>リベシティ プロフィール作成ツール</title>
+  <meta name="description" content="質問に答えるだけ！リベシティのプロフィールをチャット形式で簡単作成。">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #fef9f4;
+      --card: #ffffff;
+      --primary: #e8801a;
+      --primary-light: #f5a623;
+      --primary-dark: #d47015;
+      --primary-glow: rgba(232, 128, 26, 0.15);
+      --accent: #fff3e0;
+      --accent-warm: #ffe0b2;
+      --text: #3e2c1c;
+      --text-light: #8b7355;
+      --text-muted: #b8a48e;
+      --success: #4caf50;
+      --border: #f0e4d6;
+      --user-bubble: linear-gradient(135deg, #ffe0b2, #ffcc80);
+      --bot-bubble: #ffffff;
+      --shadow: 0 2px 12px rgba(62, 44, 28, 0.06);
+      --shadow-lg: 0 4px 20px rgba(62, 44, 28, 0.1);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, #ff9800, #f57c00, #e65100);
+      color: white;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 2px 12px rgba(230, 81, 0, 0.2);
+      flex-shrink: 0;
+      z-index: 10;
+    }
+
+    .avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      flex-shrink: 0;
+      backdrop-filter: blur(8px);
+    }
+
+    .header-info h1 { font-size: 16px; font-weight: 700; }
+    .header-info p { font-size: 11px; opacity: 0.85; }
+
+    .header-actions { margin-left: auto; }
+    .icon-btn {
+      background: rgba(255,255,255,0.2);
+      border: none;
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      font-size: 18px;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      transition: background 0.2s;
+    }
+    .icon-btn:hover { background: rgba(255,255,255,0.3); }
+
+    /* ── Progress ── */
+    .progress-wrap {
+      background: var(--accent);
+      padding: 6px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .progress-bar {
+      flex: 1;
+      height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary-light), var(--primary));
+      border-radius: 3px;
+      transition: width 0.4s ease;
+      width: 0%;
+    }
+    .progress-text {
+      font-size: 12px;
+      color: var(--text-light);
+      white-space: nowrap;
+      min-width: 50px;
+      text-align: right;
+    }
+
+    /* ── Chat ── */
+    #chat {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .msg {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      align-items: flex-end;
+      animation: fadeUp 0.3s ease;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .msg.bot { flex-direction: row; }
+    .msg.user { flex-direction: row-reverse; }
+
+    .msg-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .msg.bot .msg-avatar { background: var(--accent); }
+    .msg.user .msg-avatar { background: var(--accent-warm); }
+
+    .bubble {
+      max-width: 80%;
+      padding: 12px 16px;
+      border-radius: 18px;
+      font-size: 16px;
+      line-height: 1.6;
+      word-break: break-word;
+    }
+
+    .msg.bot .bubble {
+      background: var(--bot-bubble);
+      border-bottom-left-radius: 4px;
+      box-shadow: var(--shadow);
+    }
+
+    .msg.user .bubble {
+      background: var(--user-bubble);
+      border-bottom-right-radius: 4px;
+    }
+
+    /* ── Section Divider ── */
+    .section-divider {
+      text-align: center;
+      margin: 20px 0 12px;
+      position: relative;
+    }
+    .section-divider::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: var(--border);
+    }
+    .section-divider span {
+      position: relative;
+      background: var(--bg);
+      padding: 4px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--primary);
+      border-radius: 20px;
+      border: 1px solid var(--border);
+    }
+
+    /* ── Typing ── */
+    .typing { display: flex; gap: 4px; padding: 4px 0; }
+    .typing span {
+      width: 8px;
+      height: 8px;
+      background: var(--text-muted);
+      border-radius: 50%;
+      animation: bounce 1.2s infinite;
+    }
+    .typing span:nth-child(2) { animation-delay: 0.2s; }
+    .typing span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes bounce {
+      0%, 60%, 100% { transform: translateY(0); }
+      30% { transform: translateY(-6px); }
+    }
+
+    /* ── Quick replies ── */
+    .quick-replies {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 8px 0 8px 44px;
+      animation: fadeUp 0.3s ease;
+    }
+
+    .quick-btn {
+      padding: 8px 16px;
+      border-radius: 20px;
+      border: 1.5px solid var(--primary-light);
+      background: white;
+      color: var(--primary-dark);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+    .quick-btn:hover {
+      background: var(--accent);
+      border-color: var(--primary);
+    }
+    .quick-btn:active {
+      transform: scale(0.95);
+    }
+
+    /* ── Skip & Section Skip ── */
+    .skip-btn, .section-skip-btn {
+      display: block;
+      margin: 6px 0 6px 44px;
+      padding: 6px 14px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 13px;
+      cursor: pointer;
+      transition: color 0.2s;
+      font-family: inherit;
+    }
+    .skip-btn:hover, .section-skip-btn:hover { color: var(--text-light); }
+    .section-skip-btn {
+      font-size: 12px;
+      color: var(--text-muted);
+      opacity: 0.8;
+    }
+
+    /* ── Tone selector ── */
+    .tone-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin: 10px 44px 10px;
+      animation: fadeUp 0.3s ease;
+    }
+
+    .tone-card {
+      padding: 14px 10px;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      background: var(--card);
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+    .tone-card:hover { border-color: var(--primary-light); background: var(--accent); }
+    .tone-card:active { transform: scale(0.96); }
+    .tone-card .t-emoji { font-size: 24px; display: block; margin-bottom: 4px; }
+    .tone-card .t-name { font-size: 13px; font-weight: 500; }
+
+    /* ── Input Area ── */
+    .input-area {
+      display: flex;
+      gap: 8px;
+      padding: 12px 16px;
+      background: var(--card);
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    #user-input {
+      flex: 1;
+      border: 1.5px solid var(--border);
+      border-radius: 22px;
+      padding: 10px 16px;
+      font-size: 16px;
+      font-family: inherit;
+      resize: none;
+      outline: none;
+      transition: border-color 0.2s;
+      line-height: 1.4;
+      max-height: 120px;
+      background: var(--bg);
+    }
+    #user-input:focus { border-color: var(--primary-light); }
+
+    #send-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: none;
+      background: linear-gradient(135deg, var(--primary-light), var(--primary));
+      color: white;
+      font-size: 20px;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: opacity 0.2s, transform 0.1s;
+      align-self: flex-end;
+    }
+    #send-btn:hover { opacity: 0.9; }
+    #send-btn:active { transform: scale(0.92); }
+    #send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── Result Cards ── */
+    .result-intro {
+      text-align: center;
+      padding: 20px;
+      margin: 16px 0;
+      background: linear-gradient(135deg, #fff3e0, #ffe0b2);
+      border-radius: 16px;
+      animation: fadeUp 0.4s ease;
+    }
+    .result-intro h2 { font-size: 20px; margin-bottom: 8px; }
+    .result-intro p { font-size: 14px; color: var(--text-light); line-height: 1.6; }
+
+    .result-card {
+      background: var(--card);
+      border-radius: 14px;
+      margin: 12px 0;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      animation: fadeUp 0.3s ease;
+    }
+    .result-card-header {
+      background: var(--accent);
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .result-card-header .emoji { font-size: 18px; }
+    .result-card-header .title { font-size: 14px; font-weight: 600; color: var(--primary-dark); }
+    .result-card-hint {
+      font-size: 11px;
+      color: var(--text-muted);
+      padding: 6px 16px 0;
+    }
+    .result-card-body {
+      padding: 12px 16px;
+      font-size: 15px;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .result-card-actions {
+      padding: 8px 16px 12px;
+      display: flex;
+      justify-content: flex-end;
+    }
+    .btn-copy {
+      padding: 8px 20px;
+      border-radius: 20px;
+      border: 1.5px solid var(--primary);
+      background: white;
+      color: var(--primary-dark);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+    .btn-copy:hover { background: var(--accent); }
+    .btn-copy:active { transform: scale(0.96); }
+    .btn-copy.copied {
+      background: var(--success);
+      color: white;
+      border-color: var(--success);
+    }
+
+    .result-global-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin: 20px 0;
+      animation: fadeUp 0.3s ease;
+    }
+    .btn-all-copy {
+      padding: 14px;
+      border-radius: 14px;
+      border: none;
+      background: linear-gradient(135deg, var(--primary-light), var(--primary));
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+      font-family: inherit;
+    }
+    .btn-all-copy:hover { opacity: 0.9; }
+    .btn-all-copy:active { transform: scale(0.98); }
+    .btn-all-copy.copied { background: var(--success); }
+
+    .btn-redo {
+      padding: 12px;
+      border-radius: 14px;
+      border: 1.5px solid var(--border);
+      background: white;
+      color: var(--text-light);
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+    .btn-redo:hover { border-color: var(--text-muted); color: var(--text); }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="avatar">🦁</div>
+    <div class="header-info">
+      <h1>リベプロフィール作成くん</h1>
+      <p>質問に答えるだけで完成！</p>
+    </div>
+    <div class="header-actions">
+      <button class="icon-btn" onclick="restart()" title="最初から">🔄</button>
+    </div>
+  </header>
+
+  <div class="progress-wrap">
+    <div class="progress-bar">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+    <div class="progress-text" id="progress-text"></div>
+  </div>
+
+  <div id="chat"></div>
+
+  <div class="input-area">
+    <textarea id="user-input" rows="1" placeholder="ここに入力してください..." oninput="autoResize(this)"></textarea>
+    <button id="send-btn" onclick="sendAnswer()">➤</button>
+  </div>
+
+  <script>
+    // =========================================
+    //  セクション・質問定義
+    // =========================================
+    const SECTIONS = [
+      {
+        id: 'intro', title: '自己紹介', emoji: '📝',
+        hint: 'リベシティの「自己紹介」欄へ',
+        questions: [
+          { id: 'nickname', text: 'まず、リベシティで使うニックネームを教えてください😊\n本名でもあだ名でもOK！', placeholder: '例：いわこ、たっちゃん', required: true },
+          { id: 'age_area', text: '年代と、今お住まいの地域を教えてください🗾\n「30代・東京在住」のようにざっくりでOKです！', placeholder: '例：40代・大阪在住', skip: true },
+          { id: 'intro_job', text: 'ふだんのお仕事や活動を一言で教えてください💼', placeholder: '例：会社員です、主婦です、フリーランスのデザイナー', skip: true },
+          { id: 'intro_goal', text: 'リベシティで楽しみにしていることは？✨\n一言でOKですよ！', placeholder: '例：同じ目標の仲間と出会えること、副業の情報交換', skip: true }
+        ]
+      },
+      {
+        id: 'birthplace', title: '出身地', emoji: '🗾',
+        hint: 'リベシティの「出身地」欄へ',
+        questions: [
+          { id: 'birthplace', text: '出身地（生まれ育った場所）はどちらですか？🗾\n今の住まいと同じならスキップでOK！', placeholder: '例：北海道、大阪府堺市', skip: true }
+        ]
+      },
+      {
+        id: 'job', title: '職種・職業', emoji: '💼',
+        hint: 'リベシティの「職種・職業」欄へ（カテゴリ選択＋詳細テキスト）',
+        questions: [
+          { id: 'job_category', text: 'お仕事のカテゴリを選んでください😊\n一番近いものでOK！', skip: true, quick: ['営業・事務', '経営・企画', 'IT・Web', 'クリエイティブ', 'エンジニア', '医療・福祉', '教育・保育', '飲食・サービス', '金融・不動産', '公務員', '主婦・主夫', 'その他'] },
+          { id: 'job_detail', text: 'もう少し詳しく教えてください😊\nどんなお仕事をしていますか？', placeholder: '例：Web制作会社でディレクターをしています', skip: true }
+        ]
+      },
+      {
+        id: 'family', title: '家族構成', emoji: '👨‍👩‍👧‍👦',
+        hint: 'リベシティの「家族構成」欄へ',
+        questions: [
+          { id: 'family', text: '家族構成を教えてください👨‍👩‍👧‍👦', placeholder: '例：夫と小学生の子ども2人の4人家族', skip: true }
+        ]
+      },
+      {
+        id: 'encounter', title: 'リベ大との出会い', emoji: '🦁',
+        hint: 'リベシティの「リベ大との出会い」欄へ',
+        questions: [
+          { id: 'encounter_when', text: 'リベ大を知ったのはいつ頃ですか？📅', placeholder: '例：2023年の春ごろ', skip: true },
+          { id: 'encounter_how', text: 'どんなきっかけでリベ大を知りましたか？🌱', placeholder: '例：YouTubeのおすすめに出てきて、保険の動画を見たのがきっかけ', skip: true }
+        ]
+      },
+      {
+        id: 'challenge', title: '挑戦・実践していること', emoji: '🚀',
+        hint: 'リベシティの「挑戦、実践していること」欄へ',
+        questions: [
+          { id: 'practicing', text: '今まさにやっていることはありますか？🌱\n何個でもOK！', placeholder: '例：つみたてNISA、固定費の見直し、ブログ運営', skip: true },
+          { id: 'want_challenge', text: 'これからチャレンジしたいことは？🚀', placeholder: '例：せどりに挑戦したい、フリーランスを目指したい', skip: true },
+          { id: 'achieved', text: 'リベで学んで達成できたことはありますか？🎉\nなければスキップでOK！', placeholder: '例：保険を見直して月1万円削減できた', skip: true }
+        ]
+      },
+      {
+        id: 'hobby', title: '趣味・特技', emoji: '🎵',
+        hint: 'リベシティの「趣味・特技」欄へ',
+        questions: [
+          { id: 'hobbies', text: '趣味は何ですか？🎵\n何個でもOK！', placeholder: '例：読書、カフェ巡り、ランニング', skip: true },
+          { id: 'skills_talent', text: '特技や得意なことはありますか？✨', placeholder: '例：料理、整理整頓、人の話を聞くこと', skip: true }
+        ]
+      },
+      {
+        id: 'favorites', title: '好きな〇〇', emoji: '❤️',
+        hint: 'リベシティの「好きな〇〇」欄へ',
+        isRepeat: 'favorite',
+        questions: [
+          { id: 'fav_category', text: '好きな〇〇のカテゴリを選んでください❤️', skip: true, quick: ['食べ物', '言葉', '時間', '場所', '国', 'お店', 'スポーツ', '動物', '音楽', '映画', '本', '漫画', 'アニメ', 'ゲーム', 'キャラクター'] },
+          { id: 'fav_value', text: '好きな{category}を教えてください😊', placeholder: '例：ラーメン', skip: false }
+        ]
+      },
+      {
+        id: 'recommend', title: 'イチオシのリベ大コンテンツ', emoji: '📺',
+        hint: 'リベシティの「イチオシのリベ大コンテンツ」欄へ',
+        questions: [
+          { id: 'recommend', text: 'イチオシのリベ大コンテンツはありますか？📺\n動画、図解、ブログ、ライブ配信など何でもOK！', placeholder: '例：両学長のライブ配信、保険見直しの動画', skip: true }
+        ]
+      },
+      {
+        id: 'valuemap', title: '価値観マップ', emoji: '🗺️',
+        hint: 'リベシティの「価値観マップのリンク」欄へ',
+        questions: [
+          { id: 'value_map', text: '価値観マップのURLがあれば貼り付けてください🗺️\nまだ作ってない場合はスキップでOK！', placeholder: 'https://...', skip: true }
+        ]
+      },
+      {
+        id: 'other', title: 'その他', emoji: '💬',
+        hint: 'リベシティの「その他、ご自由にどうぞ！」欄へ',
+        questions: [
+          { id: 'other', text: '他にアピールしたいことや、伝えたいことはありますか？💬\n「こんな人と繋がりたい！」なども！', placeholder: '例：気軽にフォローしてください！ 同世代で副業がんばってる人と繋がりたいです', skip: true }
+        ]
+      },
+      {
+        id: 'sns', title: '各種SNS・URL', emoji: '📱',
+        hint: 'リベシティの「各種SNS・URL」欄へ（種類ごとに入力欄があります）',
+        isRepeat: 'sns',
+        questions: [
+          { id: 'sns_type', text: 'SNSの種類を選んでください📱', skip: true, quick: ['X（旧Twitter）', 'Instagram', 'YouTube', 'TikTok', 'ブログ', 'その他'] },
+          { id: 'sns_url', text: '{snsType}のURLまたはIDを教えてください🔗', placeholder: 'https://... または ID', skip: false }
+        ]
+      },
+      {
+        id: 'career', title: '経歴・スキル', emoji: '📋',
+        hint: 'リベシティの「経歴・スキル」欄へ',
+        questions: [
+          { id: 'career', text: 'これまでの略歴を教えてください📋\n箇条書きでもOK！', placeholder: '例：大学卒業後、IT企業に10年→Webライターとして独立', skip: true },
+          { id: 'qualifications', text: '持っている資格はありますか？📜', placeholder: '例：FP3級、簿記3級、TOEIC 800点', skip: true },
+          { id: 'provide_skills', text: '提供できるスキル・得意な仕事はありますか？✨', placeholder: '例：Webライティング、WordPress構築、Canvaデザイン', skip: true }
+        ]
+      },
+      {
+        id: 'portfolio', title: 'ポートフォリオ', emoji: '🔗',
+        hint: 'リベシティの「ポートフォリオ」欄へ',
+        questions: [
+          { id: 'portfolio_desc', text: 'ポートフォリオや実績について一言あれば教えてください🔗', placeholder: '例：Webライターとして50記事以上の実績あり', skip: true },
+          { id: 'portfolio_url', text: 'ポートフォリオのURLがあれば貼り付けてください📎', placeholder: 'https://...', skip: true }
+        ]
+      }
+    ];
+
+    const TOTAL_SECTIONS = SECTIONS.length;
+
+    // =========================================
+    //  State
+    // =========================================
+    let state = {
+      sectionIdx: 0,
+      questionIdx: 0,
+      answers: {},
+      favorites: [],      // [{category, value}]
+      snsLinks: [],        // [{type, url}]
+      tone: 'friendly',
+      isWaiting: false,
+      repeatMode: null,    // null | 'favorite' | 'sns'
+      repeatTemp: {}       // temporary data for repeat mode
+    };
+
+    // =========================================
+    //  Init
+    // =========================================
+    function init() {
+      document.getElementById('user-input').addEventListener('keydown', e => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          sendAnswer();
+        }
+      });
+
+      setTimeout(() => {
+        addBotMsg('こんにちは！🦁✨\nリベシティのプロフィールを一緒に作りましょう！\n\nいくつか質問をしますので、気軽に答えてくださいね。\n答えたくない項目はスキップできます👌\n\n全部で14ステップありますが、\n5分くらいで終わりますよ😊');
+        setTimeout(() => startSection(), 800);
+      }, 400);
+    }
+
+    // =========================================
+    //  Chat helpers
+    // =========================================
+    function addBotMsg(text) {
+      const chat = document.getElementById('chat');
+      const div = document.createElement('div');
+      div.className = 'msg bot';
+      div.innerHTML = `
+        <div class="msg-avatar">🦁</div>
+        <div class="bubble">${escapeHtml(text)}</div>
+      `;
+      chat.appendChild(div);
+      scrollBottom();
+    }
+
+    function addUserMsg(text) {
+      const chat = document.getElementById('chat');
+      const div = document.createElement('div');
+      div.className = 'msg user';
+      div.innerHTML = `
+        <div class="msg-avatar">😊</div>
+        <div class="bubble">${escapeHtml(text)}</div>
+      `;
+      chat.appendChild(div);
+      scrollBottom();
+    }
+
+    function addSkipMsg() {
+      const chat = document.getElementById('chat');
+      const div = document.createElement('div');
+      div.className = 'msg user';
+      div.style.opacity = '0.5';
+      div.innerHTML = `
+        <div class="msg-avatar">😊</div>
+        <div class="bubble" style="font-size:13px;color:var(--text-muted);">スキップ</div>
+      `;
+      chat.appendChild(div);
+      scrollBottom();
+    }
+
+    function addTyping() {
+      const chat = document.getElementById('chat');
+      const div = document.createElement('div');
+      div.className = 'msg bot';
+      div.id = 'typing-msg';
+      div.innerHTML = `
+        <div class="msg-avatar">🦁</div>
+        <div class="bubble"><div class="typing"><span></span><span></span><span></span></div></div>
+      `;
+      chat.appendChild(div);
+      scrollBottom();
+    }
+
+    function removeTyping() {
+      const el = document.getElementById('typing-msg');
+      if (el) el.remove();
+    }
+
+    function addSectionDivider(title, emoji, step) {
+      const chat = document.getElementById('chat');
+      const div = document.createElement('div');
+      div.className = 'section-divider';
+      div.innerHTML = `<span>${emoji} Step ${step}/${TOTAL_SECTIONS}：${title}</span>`;
+      chat.appendChild(div);
+      scrollBottom();
+    }
+
+    function addQuickReplies(options) {
+      const chat = document.getElementById('chat');
+      const div = document.createElement('div');
+      div.className = 'quick-replies';
+      div.id = 'quick-replies';
+      options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'quick-btn';
+        btn.textContent = opt;
+        btn.onclick = () => { removeQuickUI(); handleQuickAnswer(opt); };
+        div.appendChild(btn);
+      });
+      chat.appendChild(div);
+      scrollBottom();
+    }
+
+    function addRepeatChoice() {
+      const chat = document.getElementById('chat');
+      const div = document.createElement('div');
+      div.className = 'quick-replies';
+      div.id = 'quick-replies';
+      const addBtn = document.createElement('button');
+      addBtn.className = 'quick-btn';
+      addBtn.textContent = 'もう1つ追加する';
+      addBtn.onclick = () => { removeQuickUI(); startRepeatAgain(); };
+      div.appendChild(addBtn);
+      const nextBtn = document.createElement('button');
+      nextBtn.className = 'quick-btn';
+      nextBtn.textContent = '次へ進む ▶';
+      nextBtn.style.background = 'var(--accent)';
+      nextBtn.onclick = () => { removeQuickUI(); addUserMsg('次へ進む'); finishRepeat(); };
+      div.appendChild(nextBtn);
+      chat.appendChild(div);
+      scrollBottom();
+    }
+
+    function addToneSelector() {
+      const chat = document.getElementById('chat');
+      const div = document.createElement('div');
+      div.className = 'tone-grid';
+      div.id = 'quick-replies';
+      const tones = [
+        { key: 'friendly', emoji: '😊', name: '親しみやすい' },
+        { key: 'professional', emoji: '💼', name: 'プロフェッショナル' },
+        { key: 'energetic', emoji: '🔥', name: '元気・情熱的' },
+        { key: 'calm', emoji: '🌿', name: '穏やか・丁寧' }
+      ];
+      tones.forEach(t => {
+        const btn = document.createElement('button');
+        btn.className = 'tone-card';
+        btn.innerHTML = `<span class="t-emoji">${t.emoji}</span><span class="t-name">${t.name}</span>`;
+        btn.onclick = () => {
+          removeQuickUI();
+          addUserMsg(t.name);
+          state.tone = t.key;
+          state.isWaiting = true;
+          setTimeout(() => { state.isWaiting = false; generateAllProfiles(); }, 500);
+        };
+        div.appendChild(btn);
+      });
+      chat.appendChild(div);
+      scrollBottom();
+    }
+
+    function addSkipBtn() {
+      const chat = document.getElementById('chat');
+      const btn = document.createElement('button');
+      btn.className = 'skip-btn';
+      btn.id = 'skip-btn';
+      btn.textContent = 'スキップ →';
+      btn.onclick = () => { removeQuickUI(); handleSkip(); };
+      chat.appendChild(btn);
+      scrollBottom();
+    }
+
+    function addSectionSkipBtn() {
+      const chat = document.getElementById('chat');
+      const btn = document.createElement('button');
+      btn.className = 'section-skip-btn';
+      btn.id = 'section-skip-btn';
+      btn.textContent = 'このセクションをスキップ ▶▶';
+      btn.onclick = () => { removeQuickUI(); handleSectionSkip(); };
+      chat.appendChild(btn);
+      scrollBottom();
+    }
+
+    function removeQuickUI() {
+      ['quick-replies', 'skip-btn', 'section-skip-btn'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.remove();
+      });
+    }
+
+    function scrollBottom() {
+      const chat = document.getElementById('chat');
+      requestAnimationFrame(() => { chat.scrollTop = chat.scrollHeight; });
+    }
+
+    function escapeHtml(text) {
+      const d = document.createElement('div');
+      d.textContent = text;
+      return d.innerHTML.replace(/\n/g, '<br>');
+    }
+
+    function autoResize(el) {
+      el.style.height = 'auto';
+      el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+    }
+
+    function updateProgress() {
+      const pct = (state.sectionIdx / TOTAL_SECTIONS) * 100;
+      document.getElementById('progress-fill').style.width = pct + '%';
+      const text = state.sectionIdx >= TOTAL_SECTIONS
+        ? '完成！'
+        : `${state.sectionIdx + 1} / ${TOTAL_SECTIONS}`;
+      document.getElementById('progress-text').textContent = text;
+    }
+
+    // =========================================
+    //  Flow control
+    // =========================================
+    function startSection() {
+      if (state.sectionIdx >= TOTAL_SECTIONS) {
+        askTone();
+        return;
+      }
+
+      const sec = SECTIONS[state.sectionIdx];
+      state.questionIdx = 0;
+      state.repeatMode = sec.isRepeat || null;
+      state.repeatTemp = {};
+      updateProgress();
+
+      addSectionDivider(sec.title, sec.emoji, state.sectionIdx + 1);
+
+      if (sec.isRepeat) {
+        startRepeatSection();
+      } else {
+        askCurrentQuestion();
+      }
+    }
+
+    function askCurrentQuestion() {
+      const sec = SECTIONS[state.sectionIdx];
+      if (!sec || state.questionIdx >= sec.questions.length) {
+        state.sectionIdx++;
+        startSection();
+        return;
+      }
+
+      const q = sec.questions[state.questionIdx];
+
+      addTyping();
+      setTimeout(() => {
+        removeTyping();
+        addBotMsg(q.text);
+
+        setTimeout(() => {
+          if (q.quick) {
+            addQuickReplies(q.quick);
+          }
+          if (q.skip) {
+            addSkipBtn();
+            if (state.questionIdx === 0 && sec.questions.length > 1) {
+              addSectionSkipBtn();
+            }
+          }
+        }, 300);
+
+        const input = document.getElementById('user-input');
+        input.placeholder = q.placeholder || 'ここに入力してください...';
+        input.disabled = !!q.quick;
+        document.getElementById('send-btn').disabled = !!q.quick;
+        if (!q.quick) input.focus();
+      }, 500);
+    }
+
+    function handleQuickAnswer(value) {
+      addUserMsg(value);
+
+      if (state.repeatMode === 'favorite') {
+        state.repeatTemp.category = value;
+        state.isWaiting = true;
+        setTimeout(() => {
+          state.isWaiting = false;
+          askFavoriteValue();
+        }, 400);
+        return;
+      }
+
+      if (state.repeatMode === 'sns') {
+        state.repeatTemp.type = value;
+        state.isWaiting = true;
+        setTimeout(() => {
+          state.isWaiting = false;
+          askSnsUrl();
+        }, 400);
+        return;
+      }
+
+      const sec = SECTIONS[state.sectionIdx];
+      const q = sec.questions[state.questionIdx];
+      state.answers[q.id] = value;
+      state.questionIdx++;
+
+      state.isWaiting = true;
+      setTimeout(() => {
+        state.isWaiting = false;
+        askCurrentQuestion();
+      }, 400);
+    }
+
+    function handleSkip() {
+      addSkipMsg();
+
+      if (state.repeatMode) {
+        finishRepeat();
+        return;
+      }
+
+      state.questionIdx++;
+      state.isWaiting = true;
+      setTimeout(() => {
+        state.isWaiting = false;
+        askCurrentQuestion();
+      }, 400);
+    }
+
+    function handleSectionSkip() {
+      addSkipMsg();
+      state.sectionIdx++;
+      state.isWaiting = true;
+      setTimeout(() => {
+        state.isWaiting = false;
+        startSection();
+      }, 400);
+    }
+
+    function sendAnswer() {
+      const input = document.getElementById('user-input');
+      const text = input.value.trim();
+      if (!text || state.isWaiting) return;
+
+      input.value = '';
+      input.style.height = 'auto';
+
+      removeQuickUI();
+      addUserMsg(text);
+
+      // Handle repeat mode text input
+      if (state.repeatMode === 'favorite' && state.repeatTemp.category) {
+        state.favorites.push({ category: state.repeatTemp.category, value: text });
+        state.repeatTemp = {};
+        state.isWaiting = true;
+        setTimeout(() => {
+          state.isWaiting = false;
+          addTyping();
+          setTimeout(() => {
+            removeTyping();
+            addBotMsg('いいですね！😊\n他にも登録しますか？');
+            setTimeout(() => addRepeatChoice(), 300);
+          }, 400);
+        }, 300);
+        return;
+      }
+
+      if (state.repeatMode === 'sns' && state.repeatTemp.type) {
+        state.snsLinks.push({ type: state.repeatTemp.type, url: text });
+        state.repeatTemp = {};
+        state.isWaiting = true;
+        setTimeout(() => {
+          state.isWaiting = false;
+          addTyping();
+          setTimeout(() => {
+            removeTyping();
+            addBotMsg('登録しました！📱\n他にもSNSを追加しますか？');
+            setTimeout(() => addRepeatChoice(), 300);
+          }, 400);
+        }, 300);
+        return;
+      }
+
+      // Normal question flow
+      const sec = SECTIONS[state.sectionIdx];
+      if (!sec) return;
+      const q = sec.questions[state.questionIdx];
+      if (!q) return;
+
+      state.answers[q.id] = text;
+      state.questionIdx++;
+
+      state.isWaiting = true;
+      setTimeout(() => {
+        state.isWaiting = false;
+        askCurrentQuestion();
+      }, 400);
+    }
+
+    // =========================================
+    //  Repeat sections (favorites, sns)
+    // =========================================
+    function startRepeatSection() {
+      const sec = SECTIONS[state.sectionIdx];
+      const q = sec.questions[0]; // category selection
+      addTyping();
+      setTimeout(() => {
+        removeTyping();
+        addBotMsg(q.text);
+        setTimeout(() => {
+          if (q.quick) addQuickReplies(q.quick);
+          addSkipBtn();
+          if (state.repeatMode === 'favorite' && state.favorites.length === 0) {
+            addSectionSkipBtn();
+          }
+          if (state.repeatMode === 'sns' && state.snsLinks.length === 0) {
+            addSectionSkipBtn();
+          }
+        }, 300);
+        const input = document.getElementById('user-input');
+        input.disabled = true;
+        document.getElementById('send-btn').disabled = true;
+      }, 500);
+    }
+
+    function askFavoriteValue() {
+      const cat = state.repeatTemp.category;
+      addTyping();
+      setTimeout(() => {
+        removeTyping();
+        addBotMsg(`好きな${cat}を教えてください😊`);
+        const input = document.getElementById('user-input');
+        input.disabled = false;
+        input.placeholder = `例：${cat === '食べ物' ? 'ラーメン' : cat === '音楽' ? 'スピッツ' : cat === '映画' ? '千と千尋の神隠し' : '入力してください'}`;
+        document.getElementById('send-btn').disabled = false;
+        input.focus();
+      }, 400);
+    }
+
+    function askSnsUrl() {
+      const snsType = state.repeatTemp.type;
+      addTyping();
+      setTimeout(() => {
+        removeTyping();
+        addBotMsg(`${snsType}のURLまたはIDを教えてください🔗`);
+        const input = document.getElementById('user-input');
+        input.disabled = false;
+        input.placeholder = 'https://... または ID';
+        document.getElementById('send-btn').disabled = false;
+        input.focus();
+      }, 400);
+    }
+
+    function startRepeatAgain() {
+      addUserMsg('もう1つ追加する');
+      state.repeatTemp = {};
+      state.isWaiting = true;
+      setTimeout(() => {
+        state.isWaiting = false;
+        startRepeatSection();
+      }, 400);
+    }
+
+    function finishRepeat() {
+      state.repeatMode = null;
+      state.repeatTemp = {};
+      state.sectionIdx++;
+      state.isWaiting = true;
+      setTimeout(() => {
+        state.isWaiting = false;
+        startSection();
+      }, 400);
+    }
+
+    // =========================================
+    //  Tone selection
+    // =========================================
+    function askTone() {
+      updateProgress();
+      document.getElementById('progress-fill').style.width = '95%';
+      document.getElementById('progress-text').textContent = 'あと少し！';
+
+      addTyping();
+      setTimeout(() => {
+        removeTyping();
+        addBotMsg('お疲れさまでした！🎉\n最後に、プロフィール全体の雰囲気を選んでください✨');
+        setTimeout(() => {
+          addToneSelector();
+          const input = document.getElementById('user-input');
+          input.disabled = true;
+          document.getElementById('send-btn').disabled = true;
+        }, 300);
+      }, 500);
+    }
+
+    // =========================================
+    //  Profile generation
+    // =========================================
+    function generateAllProfiles() {
+      const input = document.getElementById('user-input');
+      input.disabled = true;
+      document.getElementById('send-btn').disabled = true;
+      document.getElementById('progress-fill').style.width = '100%';
+      document.getElementById('progress-text').textContent = '完成！';
+
+      addTyping();
+      setTimeout(() => {
+        removeTyping();
+        addBotMsg('ありがとうございます！✨\nプロフィールが完成しました！🎉\n\n下にセクションごとの文章が表示されます。\n「コピー」ボタンでコピーして、リベシティのプロフィール編集画面に貼り付けてくださいね📋');
+        setTimeout(() => showResults(), 600);
+      }, 800);
+    }
+
+    function getToneConfig() {
+      const configs = {
+        friendly: {
+          emoji: ['😊', '✨', '🌱', '🎵', '💡', '🙌', '🍀', '📚', '💪', '🎉', '❤️', '📱'],
+          closing: 'お気軽にフォロー＆メッセージください♪ 一緒に楽しみましょう🌈',
+          intro: 'はじめまして！'
+        },
+        professional: {
+          emoji: ['📌', '💼', '📊', '🎯', '📈', '🔑', '✅', '📝', '🏆', '💡', '📋', '🔗'],
+          closing: 'お気軽にお声がけください。お役に立てることがあれば幸いです。',
+          intro: 'プロフィールをご覧いただきありがとうございます。'
+        },
+        energetic: {
+          emoji: ['💪', '🔥', '🚀', '⚡', '🌟', '🎯', '💥', '✨', '🏃', '🎉', '❤️‍🔥', '📱'],
+          closing: '一緒にガンガン行動しましょう！！ DMいつでもウェルカムです🔥🔥',
+          intro: 'はじめまして！！'
+        },
+        calm: {
+          emoji: ['🌿', '🌸', '☕', '📖', '🕊️', '🌼', '🍃', '✨', '💐', '🌱', '🌷', '📱'],
+          closing: 'お気軽にお声がけいただけると嬉しいです🌸',
+          intro: 'はじめまして。プロフィールをご覧いただきありがとうございます。'
+        }
+      };
+      return configs[state.tone] || configs.friendly;
+    }
+
+    function fmtList(text) {
+      const items = text.split(/[、,，\n]/).map(s => s.trim()).filter(s => s);
+      if (items.length <= 1) return text;
+      return items.map(i => `・${i}`).join('\n');
+    }
+
+    function buildSectionText(sectionId) {
+      const a = state.answers;
+      const t = getToneConfig();
+      const e = t.emoji;
+
+      switch (sectionId) {
+        case 'intro': {
+          if (!a.nickname) return null;
+          let lines = [t.intro];
+          lines.push(`${a.nickname}です${e[0]}`);
+          if (a.age_area) lines.push(a.age_area);
+          if (a.intro_job) lines.push(`${a.intro_job}`);
+          if (a.intro_goal) lines.push(`\nリベシティでは${a.intro_goal}を楽しみにしています${e[1]}`);
+          lines.push(`\nよろしくお願いします${e[0]}`);
+          return lines.join('\n');
+        }
+        case 'birthplace':
+          return a.birthplace || null;
+        case 'job': {
+          if (!a.job_category && !a.job_detail) return null;
+          let lines = [];
+          if (a.job_category) lines.push(a.job_category);
+          if (a.job_detail) lines.push(a.job_detail);
+          return lines.join('\n') || null;
+        }
+        case 'family':
+          return a.family || null;
+        case 'encounter': {
+          if (!a.encounter_when && !a.encounter_how) return null;
+          let lines = [];
+          if (a.encounter_when && a.encounter_how) {
+            lines.push(`${a.encounter_when}に${a.encounter_how}がきっかけでリベ大を知りました${e[2]}`);
+          } else if (a.encounter_when) {
+            lines.push(`${a.encounter_when}にリベ大を知りました${e[2]}`);
+          } else {
+            lines.push(`${a.encounter_how}がきっかけでリベ大を知りました${e[2]}`);
+          }
+          return lines.join('\n');
+        }
+        case 'challenge': {
+          let parts = [];
+          if (a.practicing) parts.push(`【実践中】${e[2]}\n${fmtList(a.practicing)}`);
+          if (a.want_challenge) parts.push(`【これからやりたいこと】${e[4]}\n${fmtList(a.want_challenge)}`);
+          if (a.achieved) parts.push(`【達成したこと】${e[9]}\n${fmtList(a.achieved)}`);
+          return parts.length ? parts.join('\n\n') : null;
+        }
+        case 'hobby': {
+          let parts = [];
+          if (a.hobbies) parts.push(`${e[3]} 趣味\n${fmtList(a.hobbies)}`);
+          if (a.skills_talent) parts.push(`${e[1]} 特技\n${fmtList(a.skills_talent)}`);
+          return parts.length ? parts.join('\n\n') : null;
+        }
+        case 'favorites': {
+          if (state.favorites.length === 0) return null;
+          return state.favorites.map(f => `好きな${f.category}：${f.value}`).join('\n');
+        }
+        case 'recommend':
+          return a.recommend ? `${a.recommend}` : null;
+        case 'valuemap':
+          return a.value_map || null;
+        case 'other':
+          return a.other || null;
+        case 'sns': {
+          if (state.snsLinks.length === 0) return null;
+          return state.snsLinks.map(s => `${s.type}：${s.url}`).join('\n');
+        }
+        case 'career': {
+          let parts = [];
+          if (a.career) parts.push(`【略歴】\n${a.career}`);
+          if (a.qualifications) parts.push(`【保有資格】\n${fmtList(a.qualifications)}`);
+          if (a.provide_skills) parts.push(`【提供できるスキル】\n${fmtList(a.provide_skills)}`);
+          return parts.length ? parts.join('\n\n') : null;
+        }
+        case 'portfolio': {
+          let parts = [];
+          if (a.portfolio_desc) parts.push(a.portfolio_desc);
+          if (a.portfolio_url) parts.push(a.portfolio_url);
+          return parts.length ? parts.join('\n') : null;
+        }
+        default:
+          return null;
+      }
+    }
+
+    // =========================================
+    //  Result display
+    // =========================================
+    function showResults() {
+      const chat = document.getElementById('chat');
+
+      // Intro card
+      const introDiv = document.createElement('div');
+      introDiv.className = 'result-intro';
+      introDiv.innerHTML = `
+        <h2>🎉 プロフィール完成！</h2>
+        <p>リベシティのプロフィール編集画面を開いて、<br>各セクションに「コピー」した文章を貼り付けてください📋</p>
+      `;
+      chat.appendChild(introDiv);
+
+      // Section cards
+      const generatedSections = [];
+      SECTIONS.forEach(sec => {
+        const text = buildSectionText(sec.id);
+        if (!text) return;
+        generatedSections.push({ id: sec.id, title: sec.title, emoji: sec.emoji, hint: sec.hint, text });
+
+        const card = document.createElement('div');
+        card.className = 'result-card';
+        card.innerHTML = `
+          <div class="result-card-header">
+            <span class="emoji">${sec.emoji}</span>
+            <span class="title">${sec.title}</span>
+          </div>
+          <div class="result-card-hint">→ ${sec.hint}</div>
+          <div class="result-card-body">${escapeHtmlPlain(text)}</div>
+          <div class="result-card-actions">
+            <button class="btn-copy" onclick="copyText(this, '${sec.id}')">📋 コピー</button>
+          </div>
+        `;
+        card.dataset.text = text;
+        card.dataset.sectionId = sec.id;
+        chat.appendChild(card);
+      });
+
+      // Global actions
+      const actDiv = document.createElement('div');
+      actDiv.className = 'result-global-actions';
+      actDiv.innerHTML = `
+        <button class="btn-all-copy" onclick="copyAll()">📋 ぜんぶまとめてコピー</button>
+        <button class="btn-redo" onclick="restart()">🔄 最初からやり直す</button>
+        <div style="margin-top:16px;padding:16px;background:var(--accent);border-radius:14px;text-align:center;line-height:1.7;font-size:14px;">
+          <p style="margin-bottom:8px;">💬 <b>「やっぱり一人じゃ難しい…」</b>という方へ</p>
+          <p style="color:var(--text-light);font-size:13px;">楽しくおしゃべりしながら<br>プロフィールを一緒に作るサービスもあります😊</p>
+          <a href="https://meets.libecity.com/service/12941" target="_blank" rel="noopener" style="display:inline-block;margin-top:10px;padding:10px 20px;background:linear-gradient(135deg,var(--primary-light),var(--primary));color:white;text-decoration:none;border-radius:20px;font-weight:600;font-size:14px;">🤝 直接会って作成（スキルマーケットMeets）</a>
+          <a href="https://skill.libecity.com/services/32628" target="_blank" rel="noopener" style="display:inline-block;margin-top:6px;padding:10px 20px;background:white;color:var(--primary-dark);text-decoration:none;border-radius:20px;font-weight:600;font-size:14px;border:1.5px solid var(--primary);">💻 オンラインで作成（スキルマーケットOnline）</a>
+        </div>
+      `;
+      chat.appendChild(actDiv);
+
+      scrollBottom();
+    }
+
+    function escapeHtmlPlain(text) {
+      const d = document.createElement('div');
+      d.textContent = text;
+      return d.innerHTML.replace(/\n/g, '<br>');
+    }
+
+    async function copyText(btn, sectionId) {
+      const card = btn.closest('.result-card');
+      const text = card.dataset.text;
+      await doCopy(text);
+      btn.innerHTML = '✅ コピーしました！';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.innerHTML = '📋 コピー';
+        btn.classList.remove('copied');
+      }, 2000);
+    }
+
+    async function copyAll() {
+      const cards = document.querySelectorAll('.result-card');
+      const texts = [];
+      cards.forEach(card => {
+        const sec = SECTIONS.find(s => s.id === card.dataset.sectionId);
+        if (sec && card.dataset.text) {
+          texts.push(`◆ ${sec.title}\n${card.dataset.text}`);
+        }
+      });
+
+      const t = getToneConfig();
+      texts.push(`━━━━━━━━━━━━━\n${t.closing}`);
+
+      await doCopy(texts.join('\n\n'));
+      const btn = document.querySelector('.btn-all-copy');
+      btn.innerHTML = '✅ コピーしました！';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.innerHTML = '📋 ぜんぶまとめてコピー';
+        btn.classList.remove('copied');
+      }, 2000);
+    }
+
+    async function doCopy(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+    }
+
+    function restart() {
+      const hasData = Object.keys(state.answers).length > 0 || state.favorites.length > 0 || state.snsLinks.length > 0;
+      if (hasData && !confirm('入力内容をリセットして最初からやり直しますか？')) return;
+
+      state = {
+        sectionIdx: 0, questionIdx: 0, answers: {},
+        favorites: [], snsLinks: [], tone: 'friendly',
+        isWaiting: false, repeatMode: null, repeatTemp: {}
+      };
+
+      document.getElementById('chat').innerHTML = '';
+      document.getElementById('progress-fill').style.width = '0%';
+      document.getElementById('progress-text').textContent = '';
+      const input = document.getElementById('user-input');
+      input.disabled = false;
+      input.value = '';
+      input.placeholder = 'ここに入力してください...';
+      document.getElementById('send-btn').disabled = false;
+      init();
+    }
+
+    // ── Start ──
+    init();
+  </script>
+</body>
+</html>
