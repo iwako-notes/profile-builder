@@ -472,7 +472,10 @@
           { id: 'nickname', text: 'まず、リベシティで使うニックネームを教えてください😊\n本名でもあだ名でもOK！', placeholder: '例：いわこ、たっちゃん', required: true },
           { id: 'age_area', text: '年代と、今お住まいの地域を教えてください🗾\n「30代・東京在住」のようにざっくりでOKです！', placeholder: '例：40代・大阪在住', skip: true },
           { id: 'intro_job', text: 'ふだんのお仕事や活動を一言で教えてください💼', placeholder: '例：会社員です、主婦です、フリーランスのデザイナー', skip: true },
-          { id: 'intro_goal', text: 'リベシティで楽しみにしていることは？✨\n一言でOKですよ！', placeholder: '例：同じ目標の仲間と出会えること、副業の情報交換', skip: true }
+          { id: 'intro_personality', text: 'ご自身の性格やタイプを一言で教えてください😄\n親しみやすさが伝わります！', placeholder: '例：人見知りだけど話し出すと止まらない、のんびり屋', skip: true },
+          { id: 'intro_interest', text: 'リベ大のコンテンツで特に興味があるジャンルは？📚', skip: true, quick: ['貯める力', '稼ぐ力', '増やす力', '守る力', '使う力'] },
+          { id: 'intro_goal', text: 'リベシティで楽しみにしていることは？✨\n一言でOKですよ！', placeholder: '例：同じ目標の仲間と出会えること、副業の情報交換', skip: true },
+          { id: 'intro_message', text: '最後に、見てくれた人へのひとことメッセージをどうぞ💬\nスキップでもOK！', placeholder: '例：気軽にコメントやフォローしてください！、同じ地域の方つながりましょう！', skip: true }
         ]
       },
       {
@@ -1147,8 +1150,11 @@
           let lines = [t.intro];
           lines.push(`${a.nickname}です${e[0]}`);
           if (a.age_area) lines.push(a.age_area);
-          if (a.intro_job) lines.push(`${a.intro_job}`);
-          if (a.intro_goal) lines.push(`\nリベシティでは${a.intro_goal}を楽しみにしています${e[1]}`);
+          if (a.intro_job) lines.push(a.intro_job);
+          if (a.intro_personality) lines.push(`性格は${a.intro_personality}タイプです${e[3]}`);
+          if (a.intro_interest) lines.push(`\nリベ大では「${a.intro_interest}」に特に興味があります${e[7]}`);
+          if (a.intro_goal) lines.push(`${a.intro_interest ? '' : '\n'}リベシティでは${a.intro_goal}を楽しみにしています${e[1]}`);
+          if (a.intro_message) lines.push(`\n${a.intro_message}${e[10]}`);
           lines.push(`\nよろしくお願いします${e[0]}`);
           return lines.join('\n');
         }
