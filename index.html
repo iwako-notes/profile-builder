@@ -600,9 +600,16 @@
     // =========================================
     //  Init
     // =========================================
+    let isComposing = false;
+
     function init() {
-      document.getElementById('user-input').addEventListener('keydown', e => {
-        if (e.key === 'Enter' && e.shiftKey) {
+      const inputEl = document.getElementById('user-input');
+
+      inputEl.addEventListener('compositionstart', () => { isComposing = true; });
+      inputEl.addEventListener('compositionend', () => { isComposing = false; });
+
+      inputEl.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && e.shiftKey && !isComposing) {
           e.preventDefault();
           sendAnswer();
         }
@@ -922,10 +929,14 @@
     function sendAnswer() {
       const input = document.getElementById('user-input');
       const text = input.value.trim();
-      if (!text || state.isWaiting) return;
+      if (!text || state.isWaiting || isComposing) return;
 
+      input.blur();
       input.value = '';
+      input.textContent = '';
       input.style.height = 'auto';
+      input.dispatchEvent(new Event('input'));
+      setTimeout(() => input.focus(), 50);
 
       removeQuickUI();
       addUserMsg(text);
