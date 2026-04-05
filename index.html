@@ -297,21 +297,27 @@
       flex-shrink: 0;
     }
 
-    #undo-btn {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      border: 1.5px solid var(--border);
-      background: white;
-      color: var(--text-light);
-      font-size: 18px;
-      cursor: pointer;
+    .undo-wrap {
+      display: none;
+      justify-content: center;
+      padding: 6px 12px 2px;
       flex-shrink: 0;
+    }
+    .undo-wrap.visible { display: flex; }
+    #undo-btn {
+      padding: 7px 16px;
+      border-radius: 18px;
+      border: 1.5px solid var(--primary);
+      background: var(--accent);
+      color: var(--primary-dark);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
       transition: all 0.2s;
       font-family: inherit;
     }
-    #undo-btn:hover { border-color: var(--primary); color: var(--primary); }
-    #undo-btn:active { transform: scale(0.92); }
+    #undo-btn:hover { background: var(--accent-warm); }
+    #undo-btn:active { transform: scale(0.96); }
 
     #user-input {
       flex: 1;
@@ -500,8 +506,10 @@
 
   <div id="chat"></div>
 
+  <div class="undo-wrap" id="undo-wrap">
+    <button id="undo-btn" onclick="undoLast()">↩ 1つ戻る</button>
+  </div>
   <div class="input-area">
-    <button id="undo-btn" onclick="undoLast()" title="1つ前に戻る" style="display:none;">↩</button>
     <textarea id="user-input" rows="1" placeholder="ここに入力してください..." oninput="autoResize(this)"></textarea>
     <button id="send-btn" onclick="sendAnswer()">➤</button>
   </div>
@@ -664,8 +672,14 @@
     }
 
     function updateUndoBtn() {
-      const btn = document.getElementById('undo-btn');
-      if (btn) btn.style.display = history.length > 0 ? '' : 'none';
+      const wrap = document.getElementById('undo-wrap');
+      if (wrap) {
+        if (history.length > 0) {
+          wrap.classList.add('visible');
+        } else {
+          wrap.classList.remove('visible');
+        }
+      }
     }
 
     // =========================================
