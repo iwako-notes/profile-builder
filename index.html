@@ -71,13 +71,15 @@
     .icon-btn {
       background: rgba(255,255,255,0.2);
       border: none;
-      border-radius: 50%;
-      width: 36px;
-      height: 36px;
-      font-size: 18px;
+      border-radius: 18px;
+      padding: 6px 12px;
+      font-size: 12px;
+      color: white;
       cursor: pointer;
       backdrop-filter: blur(8px);
       transition: background 0.2s;
+      font-family: inherit;
+      white-space: nowrap;
     }
     .icon-btn:hover { background: rgba(255,255,255,0.3); }
 
@@ -493,7 +495,7 @@
       <p>質問に答えるだけで完成！</p>
     </div>
     <div class="header-actions">
-      <button class="icon-btn" onclick="restart()" title="最初から">🔄</button>
+      <button class="icon-btn" onclick="restart()" title="最初から">🔄 最初から</button>
     </div>
   </header>
 
