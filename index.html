@@ -1457,22 +1457,40 @@
       state.repeatMode = snap.repeatMode;
       state.repeatTemp = snap.repeatTemp;
       state.isWaiting = false;
-      document.getElementById('chat').innerHTML = snap.chatHTML;
-      updateProgress();
 
-      // Re-enable input
+      // Restore chat HTML
+      const chat = document.getElementById('chat');
+      chat.innerHTML = snap.chatHTML;
+
+      // Remove dead buttons and last bot message (will be re-created with handlers)
+      removeQuickUI();
+      const botMsgs = chat.querySelectorAll('.msg.bot');
+      if (botMsgs.length > 0) botMsgs[botMsgs.length - 1].remove();
+
+      // If first question of section, also remove section divider
+      if (state.questionIdx === 0) {
+        const dividers = chat.querySelectorAll('.section-divider');
+        if (dividers.length > 0) dividers[dividers.length - 1].remove();
+      }
+
+      updateProgress();
+      updateUndoBtn();
+
+      // Re-display question with proper event handlers
       const sec = SECTIONS[state.sectionIdx];
       if (sec) {
-        const q = sec.questions[state.questionIdx];
-        const input = document.getElementById('user-input');
-        input.disabled = !!(q && q.quick);
-        document.getElementById('send-btn').disabled = !!(q && q.quick);
-        if (q && q.placeholder) input.placeholder = q.placeholder;
+        if (state.questionIdx === 0) {
+          startSection();
+        } else if (state.repeatMode === 'favorite' && state.repeatTemp.category) {
+          askFavoriteValue();
+        } else if (state.repeatMode === 'sns' && state.repeatTemp.type) {
+          askSnsUrl();
+        } else if (sec.isRepeat) {
+          startRepeatSection();
+        } else {
+          askCurrentQuestion();
+        }
       }
-      updateUndoBtn();
-      // Scroll to bottom
-      const chat = document.getElementById('chat');
-      chat.scrollTop = chat.scrollHeight;
     }
 
     function restart() {
