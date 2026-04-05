@@ -297,6 +297,22 @@
       flex-shrink: 0;
     }
 
+    #undo-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 1.5px solid var(--border);
+      background: white;
+      color: var(--text-light);
+      font-size: 18px;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+    #undo-btn:hover { border-color: var(--primary); color: var(--primary); }
+    #undo-btn:active { transform: scale(0.92); }
+
     #user-input {
       flex: 1;
       border: 1.5px solid var(--border);
@@ -485,6 +501,7 @@
   <div id="chat"></div>
 
   <div class="input-area">
+    <button id="undo-btn" onclick="undoLast()" title="1つ前に戻る" style="display:none;">↩</button>
     <textarea id="user-input" rows="1" placeholder="ここに入力してください..." oninput="autoResize(this)"></textarea>
     <button id="send-btn" onclick="sendAnswer()">➤</button>
   </div>
@@ -628,6 +645,28 @@
       repeatMode: null,    // null | 'favorite' | 'sns'
       repeatTemp: {}       // temporary data for repeat mode
     };
+
+    // History stack for undo
+    let history = [];
+
+    function saveSnapshot() {
+      history.push({
+        sectionIdx: state.sectionIdx,
+        questionIdx: state.questionIdx,
+        answers: JSON.parse(JSON.stringify(state.answers)),
+        favorites: JSON.parse(JSON.stringify(state.favorites)),
+        snsLinks: JSON.parse(JSON.stringify(state.snsLinks)),
+        repeatMode: state.repeatMode,
+        repeatTemp: JSON.parse(JSON.stringify(state.repeatTemp)),
+        chatHTML: document.getElementById('chat').innerHTML
+      });
+      updateUndoBtn();
+    }
+
+    function updateUndoBtn() {
+      const btn = document.getElementById('undo-btn');
+      if (btn) btn.style.display = history.length > 0 ? '' : 'none';
+    }
 
     // =========================================
     //  Init
@@ -898,6 +937,7 @@
     }
 
     function handleQuickAnswer(value) {
+      saveSnapshot();
       addUserMsg(value);
 
       if (state.repeatMode === 'favorite') {
@@ -933,6 +973,7 @@
     }
 
     function handleSkip() {
+      saveSnapshot();
       addSkipMsg();
 
       if (state.repeatMode) {
@@ -949,6 +990,7 @@
     }
 
     function handleSectionSkip() {
+      saveSnapshot();
       addSkipMsg();
       state.sectionIdx++;
       state.isWaiting = true;
@@ -963,6 +1005,7 @@
       const text = input.value.trim();
       if (!text || state.isWaiting || isComposing) return;
 
+      saveSnapshot();
       input.blur();
       input.value = '';
       input.textContent = '';
@@ -1387,6 +1430,35 @@
       }
     }
 
+    function undoLast() {
+      if (history.length === 0 || state.isWaiting) return;
+      const snap = history.pop();
+      state.sectionIdx = snap.sectionIdx;
+      state.questionIdx = snap.questionIdx;
+      state.answers = snap.answers;
+      state.favorites = snap.favorites;
+      state.snsLinks = snap.snsLinks;
+      state.repeatMode = snap.repeatMode;
+      state.repeatTemp = snap.repeatTemp;
+      state.isWaiting = false;
+      document.getElementById('chat').innerHTML = snap.chatHTML;
+      updateProgress();
+
+      // Re-enable input
+      const sec = SECTIONS[state.sectionIdx];
+      if (sec) {
+        const q = sec.questions[state.questionIdx];
+        const input = document.getElementById('user-input');
+        input.disabled = !!(q && q.quick);
+        document.getElementById('send-btn').disabled = !!(q && q.quick);
+        if (q && q.placeholder) input.placeholder = q.placeholder;
+      }
+      updateUndoBtn();
+      // Scroll to bottom
+      const chat = document.getElementById('chat');
+      chat.scrollTop = chat.scrollHeight;
+    }
+
     function restart() {
       const hasData = Object.keys(state.answers).length > 0 || state.favorites.length > 0 || state.snsLinks.length > 0;
       if (hasData && !confirm('入力内容をリセットして最初からやり直しますか？')) return;
@@ -1396,8 +1468,10 @@
         favorites: [], snsLinks: [], tone: 'friendly',
         isWaiting: false, repeatMode: null, repeatTemp: {}
       };
+      history = [];
 
       document.getElementById('chat').innerHTML = '';
+      updateUndoBtn();
       document.getElementById('progress-fill').style.width = '0%';
       document.getElementById('progress-text').textContent = '';
       const input = document.getElementById('user-input');
