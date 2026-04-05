@@ -624,7 +624,7 @@
         id: 'career', title: '経歴・スキル', emoji: '📋',
         hint: 'リベシティの「経歴・スキル」欄へ',
         questions: [
-          { id: 'career', text: 'これまでの略歴を教えてください📋\n箇条書きでもOK！', placeholder: '例：大学卒業後、IT企業に10年→Webライターとして独立', skip: true },
+          { id: 'career', text: 'これまでのお仕事や経験をざっくり教えてください📋\n箇条書きでもOK！', placeholder: '例：飲食店で5年→事務職→今は在宅ワーク中', skip: true },
           { id: 'qualifications', text: '持っている資格はありますか？📜', placeholder: '例：FP3級、簿記3級、TOEIC 800点', skip: true },
           { id: 'provide_skills', text: '提供できるスキル・得意な仕事はありますか？✨', placeholder: '例：Webライティング、WordPress構築、Canvaデザイン', skip: true }
         ]
@@ -1298,7 +1298,7 @@
         }
         case 'career': {
           let parts = [];
-          if (a.career) parts.push(`【略歴】\n${a.career}`);
+          if (a.career) parts.push(`【これまでの経験】\n${a.career}`);
           if (a.qualifications) parts.push(`【保有資格】\n${fmtList(a.qualifications)}`);
           if (a.provide_skills) parts.push(`【提供できるスキル】\n${fmtList(a.provide_skills)}`);
           return parts.length ? parts.join('\n\n') : null;
